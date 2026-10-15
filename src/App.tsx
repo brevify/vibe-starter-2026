@@ -16,12 +16,15 @@ import { SubscribeModal } from './components/SubscribeModal';
 import { LoginModal } from './components/LoginModal';
 import { MarketWeatherModal } from './components/MarketWeatherModal';
 import { SavedModal } from './components/SavedModal';
+import { TodaysPaperModal } from './components/TodaysPaperModal';
+import { AudioPlayerBar } from './components/AudioPlayerBar';
 import { Article, ARTICLES } from './data/newsData';
 
 export default function App() {
   const [activeArticle, setActiveArticle] = useState<Article | null>(null);
   const [activeEdition, setActiveEdition] = useState('U.S.');
   const [activeSection, setActiveSection] = useState('U.S.');
+  const [paperTone, setPaperTone] = useState<'white' | 'newsprint' | 'sepia'>('white');
   
   // Modals
   const [isCrosswordOpen, setIsCrosswordOpen] = useState(false);
@@ -31,7 +34,14 @@ export default function App() {
   const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isSavedOpen, setIsSavedOpen] = useState(false);
+  const [isTodaysPaperOpen, setIsTodaysPaperOpen] = useState(false);
   const [marketModalType, setMarketModalType] = useState<'market' | 'weather' | null>(null);
+
+  // Audio Dispatch state
+  const [currentAudioArticle, setCurrentAudioArticle] = useState<Article | null>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
 
   // User state & Saved articles
   const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -51,6 +61,42 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Audio timer simulation
+  useEffect(() => {
+    let interval: any = null;
+    if (isAudioPlaying && currentAudioArticle) {
+      interval = setInterval(() => {
+        setAudioProgress(prev => {
+          if (prev >= 100) {
+            setIsAudioPlaying(false);
+            return 0;
+          }
+          return prev + 0.5 * playbackRate;
+        });
+      }, 500);
+    }
+    return () => clearInterval(interval);
+  }, [isAudioPlaying, currentAudioArticle, playbackRate]);
+
+  // Keyboard shortcut Ctrl+K / Cmd+K to open search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleStartAudio = (article: Article) => {
+    setCurrentAudioArticle(article);
+    setIsAudioPlaying(true);
+    setAudioProgress(0);
+    showToast(`Playing audio dispatch: “${article.headline}”`);
+  };
+
   const toggleBookmark = (articleId: string) => {
     setSavedArticleIds(prev => {
       const exists = prev.includes(articleId);
@@ -58,7 +104,7 @@ export default function App() {
       try {
         localStorage.setItem('nyt_saved_articles', JSON.stringify(updated));
       } catch {}
-      showToast(exists ? 'Removed from saved articles' : 'Saved to your reading list');
+      showToast(exists ? 'Removed from saved articles' : 'Saved to reading list');
       return updated;
     });
   };
@@ -73,14 +119,7 @@ export default function App() {
     if (activeArticle) {
       setActiveArticle(null);
     }
-    if (section === 'Opinion') {
-      const opinionStory = ARTICLES.find(a => a.isOpinion);
-      if (opinionStory) {
-        showToast('Viewing Opinion section');
-      }
-    } else {
-      showToast(`Viewing ${section} news`);
-    }
+    showToast(`Navigated to ${section}`);
   };
 
   const handleTrendingClick = (topic: string) => {
@@ -97,11 +136,23 @@ export default function App() {
     }
   };
 
+  const getContainerBg = () => {
+    switch (paperTone) {
+      case 'newsprint':
+        return 'bg-[#FBF9F5] text-[#1a1a1a]';
+      case 'sepia':
+        return 'bg-[#EFECE6] text-[#222]';
+      case 'white':
+      default:
+        return 'bg-white text-nyt-black';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white text-nyt-black flex flex-col font-sans selection:bg-gray-200">
+    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 selection:bg-gray-200 ${getContainerBg()}`}>
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-nyt-black text-white text-xs px-4 py-2.5 rounded-sm shadow-2xl font-sans animate-fade-in flex items-center space-x-2 border border-gray-700">
+        <div className="fixed bottom-16 right-6 z-50 bg-[#121212] text-white text-xs px-4 py-2.5 rounded-xs shadow-2xl font-sans animate-fadeIn flex items-center space-x-2 border border-neutral-700">
           <span className="w-2 h-2 rounded-full bg-emerald-400" />
           <span>{toastMessage}</span>
         </div>
@@ -121,13 +172,24 @@ export default function App() {
         onOpenCrossword={() => setIsCrosswordOpen(true)}
         onOpenCooking={() => setIsCookingOpen(true)}
         onOpenWirecutter={() => setIsWirecutterOpen(true)}
+        onOpenTodaysPaper={() => setIsTodaysPaperOpen(true)}
         onGoHome={() => setActiveArticle(null)}
         currentUser={currentUser}
         savedCount={savedArticleIds.length}
         onOpenSaved={() => setIsSavedOpen(true)}
+        paperTone={paperTone}
+        onTogglePaperTone={setPaperTone}
+        isAudioPlaying={isAudioPlaying}
+        onOpenAudioBar={() => {
+          if (!currentAudioArticle) {
+            handleStartAudio(ARTICLES[0]);
+          } else {
+            setIsAudioPlaying(!isAudioPlaying);
+          }
+        }}
       />
 
-      {/* Main Body: Either Reader or Front Page */}
+      {/* Main Content Area */}
       <div className="flex-1">
         {activeArticle ? (
           <ArticleReader
@@ -136,6 +198,7 @@ export default function App() {
             onSelectArticle={setActiveArticle}
             isBookmarked={savedArticleIds.includes(activeArticle.id)}
             onToggleBookmark={toggleBookmark}
+            onPlayArticleAudio={handleStartAudio}
           />
         ) : (
           <FrontPage
@@ -150,6 +213,23 @@ export default function App() {
         )}
       </div>
 
+      {/* Persistent Audio Dispatch Bar */}
+      {currentAudioArticle && (
+        <AudioPlayerBar
+          article={currentAudioArticle}
+          isPlaying={isAudioPlaying}
+          onTogglePlay={() => setIsAudioPlaying(!isAudioPlaying)}
+          progress={audioProgress}
+          onSeek={setAudioProgress}
+          playbackRate={playbackRate}
+          onChangeRate={setPlaybackRate}
+          onClose={() => {
+            setIsAudioPlaying(false);
+            setCurrentAudioArticle(null);
+          }}
+        />
+      )}
+
       {/* Footer */}
       <Footer
         onSelectSection={handleSelectSection}
@@ -159,7 +239,7 @@ export default function App() {
         onGoHome={() => setActiveArticle(null)}
       />
 
-      {/* Interactive Modals */}
+      {/* Interactive Pro Modals */}
       <MiniCrosswordModal
         isOpen={isCrosswordOpen}
         onClose={() => setIsCrosswordOpen(false)}
@@ -175,6 +255,12 @@ export default function App() {
         onClose={() => setIsWirecutterOpen(false)}
       />
 
+      <TodaysPaperModal
+        isOpen={isTodaysPaperOpen}
+        onClose={() => setIsTodaysPaperOpen(false)}
+        onSelectArticle={setActiveArticle}
+      />
+
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
@@ -185,7 +271,7 @@ export default function App() {
         isOpen={isSubscribeOpen}
         onClose={() => setIsSubscribeOpen(false)}
         onSubscribed={() => {
-          showToast('Thank you for subscribing to The New York Times!');
+          showToast('Welcome to NYT All Access!');
           setCurrentUser('subscriber@nytimes.com');
         }}
       />
@@ -195,7 +281,7 @@ export default function App() {
         onClose={() => setIsLoginOpen(false)}
         onLoggedIn={email => {
           setCurrentUser(email);
-          showToast(`Logged in as ${email}`);
+          showToast(`Signed in as ${email}`);
         }}
       />
 

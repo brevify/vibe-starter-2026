@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Maximize2, X, ChevronRight, Sparkles } from 'lucide-react';
 import { Article, ARTICLES } from '../data/newsData';
 
 interface FrontPageProps {
@@ -20,6 +21,8 @@ export const FrontPage: React.FC<FrontPageProps> = ({
   activeSection,
   onTrendingClick
 }) => {
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; caption: string; credit?: string } | null>(null);
+
   // Articles
   const mainArticle = ARTICLES.find(a => a.id === 'trump-attorney-ties') || ARTICLES[0];
   const articleWomen = ARTICLES.find(a => a.id === 'women-leaving-trump') || ARTICLES[1];
@@ -31,8 +34,40 @@ export const FrontPage: React.FC<FrontPageProps> = ({
   const opinionPaul = ARTICLES.find(a => a.id === 'pamela-paul-education') || ARTICLES[7];
   const opinionBoard = ARTICLES.find(a => a.id === 'editorial-board-justice') || ARTICLES[8];
 
+  // Specific section views for World, Business, Arts, The Athletic
+  const isDedicatedSection = activeSection !== 'U.S.' && activeSection !== 'Lifestyle';
+  const sectionFilteredArticles = ARTICLES.filter(a => 
+    a.section.toLowerCase().includes(activeSection.toLowerCase())
+  );
+
   return (
     <main className="max-w-[1280px] mx-auto px-4 pb-16" data-purpose="homepage-feed">
+      {/* Lightbox Modal */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button 
+            className="absolute top-6 right-6 text-white hover:text-gray-300 p-2"
+            onClick={() => setLightboxImage(null)}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <div className="max-w-4xl max-h-[85vh] flex flex-col items-center" onClick={e => e.stopPropagation()}>
+            <img 
+              src={lightboxImage.url} 
+              alt={lightboxImage.caption} 
+              className="max-h-[75vh] w-auto object-contain border border-neutral-700 shadow-2xl"
+            />
+            <div className="w-full mt-3 text-xs text-neutral-300 flex justify-between font-sans">
+              <span>{lightboxImage.caption}</span>
+              <span className="text-neutral-500 uppercase">{lightboxImage.credit}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Alert / Micro-banner */}
       <div className="text-center text-[11px] text-nyt-gray border-b border-nyt-border pb-2 mb-4 font-sans flex flex-wrap items-center justify-center gap-2">
         <span className="italic font-serif">Trending stories and live updates:</span>
@@ -58,11 +93,56 @@ export const FrontPage: React.FC<FrontPageProps> = ({
         </button>
 
         {activeEdition !== 'U.S.' && (
-          <span className="bg-nyt-subtle text-nyt-blue text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase tracking-wider ml-1">
-            {activeEdition} Edition Active
+          <span className="bg-nyt-subtle text-nyt-blue text-[10px] font-bold px-2 py-0.5 rounded-xs uppercase tracking-wider ml-1">
+            {activeEdition} Edition
           </span>
         )}
       </div>
+
+      {/* Dedicated Section View if non-US section selected */}
+      {isDedicatedSection && sectionFilteredArticles.length > 0 ? (
+        <div className="mb-12 animate-fadeIn">
+          <div className="border-b-2 border-nyt-black pb-2 mb-6 flex items-baseline justify-between">
+            <h2 className="font-headline font-bold text-3xl text-nyt-black uppercase tracking-tight">
+              {activeSection}
+            </h2>
+            <span className="text-xs text-nyt-gray font-sans">
+              Showing {sectionFilteredArticles.length} curated dispatches
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {sectionFilteredArticles.map((art, idx) => (
+              <article 
+                key={art.id}
+                onClick={() => onSelectArticle(art)}
+                className="cursor-pointer group flex flex-col justify-between border-b md:border-b-0 pb-4 md:pb-0"
+              >
+                <div>
+                  {art.kicker && (
+                    <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-red-700 block mb-1">
+                      {art.kicker}
+                    </span>
+                  )}
+                  <h3 className="font-headline font-bold text-xl text-nyt-black group-hover:underline mb-2 leading-tight">
+                    {art.headline}
+                  </h3>
+                  <p className="font-summary text-xs text-nyt-darkgray leading-relaxed mb-3">
+                    {art.summary}
+                  </p>
+                </div>
+                <div className="text-[11px] font-sans text-nyt-gray flex items-center space-x-1">
+                  <span>By {art.byline}</span>
+                  <span>•</span>
+                  <span>{art.readTime}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="newspaper-rule-double mt-10 mb-8" />
+        </div>
+      ) : null}
 
       {/* Editorial Three-Column Layout mimicking New York Times Frontpage */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
@@ -119,12 +199,13 @@ export const FrontPage: React.FC<FrontPageProps> = ({
           {/* Left Column Mini-feature Box (Today's Crossword) */}
           <div 
             onClick={onOpenCrossword}
-            className="bg-nyt-subtle p-3 rounded-sm border border-nyt-border mt-4 cursor-pointer hover:border-nyt-black hover:bg-stone-100 transition-all group"
+            className="bg-nyt-subtle p-3 rounded-xs border border-nyt-border mt-4 cursor-pointer hover:border-nyt-black hover:bg-stone-100 transition-all group"
             title="Play Today's Mini Crossword"
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-nyt-gray group-hover:text-nyt-black">
-                Today's Crossword
+              <span className="text-[10px] font-bold uppercase tracking-wider text-nyt-gray group-hover:text-nyt-black flex items-center space-x-1">
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>Today's Crossword</span>
               </span>
               <span className="text-[10px] font-bold text-nyt-blue uppercase tracking-wider">
                 Play Mini →
@@ -157,14 +238,30 @@ export const FrontPage: React.FC<FrontPageProps> = ({
               </div>
             </div>
 
-            {/* Featured Photography */}
-            <figure className="relative my-3" data-purpose="editorial-image-container">
-              <img
-                onClick={() => onSelectArticle(mainArticle)}
-                alt="Attorney appearing at federal court hearing"
-                className="w-full h-auto object-cover border border-nyt-border cursor-pointer hover:opacity-95 transition-opacity"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxUDqKC4oFS8CltYQTFFhS5VqZvXy0ssakEDgTHm7UPCi3JqG-ozNmSkOGXXSCFnkqbLOGEpphHS6wFrtS-3Iny3XgiojdYynMxP2_luxihywyiRvBYx6lqKwcocxxPyfcalA1-A5HVy1RzTiX6JckD36pkfu382I3KEjOj9yA7BRkJmLetdrzHxF1oyuAvuVfohcdBR4hzy8MaldwalsdTo1oGWQIQo92NHOSAsIEK6JF8c2JpIBm"
-              />
+            {/* Featured Photography with Lightbox Trigger */}
+            <figure className="relative my-3 group" data-purpose="editorial-image-container">
+              <div className="relative overflow-hidden cursor-pointer">
+                <img
+                  onClick={() => onSelectArticle(mainArticle)}
+                  alt="Attorney appearing at federal court hearing"
+                  className="w-full h-auto object-cover border border-nyt-border hover:scale-[1.01] transition-transform duration-300"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxUDqKC4oFS8CltYQTFFhS5VqZvXy0ssakEDgTHm7UPCi3JqG-ozNmSkOGXXSCFnkqbLOGEpphHS6wFrtS-3Iny3XgiojdYynMxP2_luxihywyiRvBYx6lqKwcocxxPyfcalA1-A5HVy1RzTiX6JckD36pkfu382I3KEjOj9yA7BRkJmLetdrzHxF1oyuAvuVfohcdBR4hzy8MaldwalsdTo1oGWQIQo92NHOSAsIEK6JF8c2JpIBm"
+                />
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    setLightboxImage({
+                      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAxUDqKC4oFS8CltYQTFFhS5VqZvXy0ssakEDgTHm7UPCi3JqG-ozNmSkOGXXSCFnkqbLOGEpphHS6wFrtS-3Iny3XgiojdYynMxP2_luxihywyiRvBYx6lqKwcocxxPyfcalA1-A5HVy1RzTiX6JckD36pkfu382I3KEjOj9yA7BRkJmLetdrzHxF1oyuAvuVfohcdBR4hzy8MaldwalsdTo1oGWQIQo92NHOSAsIEK6JF8c2JpIBm',
+                      caption: 'Alina Habba arriving at Manhattan Supreme Court on Tuesday morning.',
+                      credit: 'POOL PHOTO BY JUSTIN LANE'
+                    });
+                  }}
+                  className="absolute bottom-2 right-2 p-1.5 bg-black/70 hover:bg-black text-white rounded-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Expand photo lightbox"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <figcaption className="mt-1.5 text-[11px] text-nyt-gray leading-normal flex justify-between font-sans">
                 <span>Alina Habba arriving at Manhattan Supreme Court on Tuesday morning.</span>
                 <span className="text-gray-400 uppercase tracking-tighter">Pool photo by Justin Lane</span>
@@ -227,7 +324,7 @@ export const FrontPage: React.FC<FrontPageProps> = ({
               <img
                 onClick={() => onSelectArticle(opinionFriedman)}
                 alt="Thomas L. Friedman"
-                className="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-1 border border-nyt-border cursor-pointer hover:opacity-90"
+                className="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-1 border border-nyt-border cursor-pointer hover:opacity-90 transition-opacity"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgfA8OYm57z8GyHbLgZSSlPAkIMGpFHDnYE2iDzICClzjlE1ZnC4V0-apdLK4FvrSVOIMrN6X1CJ1PKkYjRH82WleFiEmqzOG-PE9A1kh6bidpLQSQN-ZwY6w08GLuQvC8Jp5mLIMAKoLhZuEJAFPg8zE1zWm7ToxaCzApeCLI_Nb4i0g0jpKae7kWjFKcrxWESOiX8qowR_BlEvZPd5qyxO_NtLl0cqv9vQZNWCtoUwMPBQTX7tcC"
               />
             </article>
@@ -251,7 +348,7 @@ export const FrontPage: React.FC<FrontPageProps> = ({
               <img
                 onClick={() => onSelectArticle(opinionPaul)}
                 alt="Pamela Paul"
-                className="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-1 border border-nyt-border cursor-pointer hover:opacity-90"
+                className="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-1 border border-nyt-border cursor-pointer hover:opacity-90 transition-opacity"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuCY9KyPq9loaKi0aizr28KpcAiuPTNQUs-obc6d7NCJ2OvYAa1qMTfFUsPDzQB5AyNIPbOIM9zvTo72jmHAfK5xuOA2k-i24EUpGvtXyjh-wKyRoHP7Wb1o9rYrM0bR5JPvBIuQzRCkTiMX07luzuax7axClejZGckUmc0ngvr1uw_ZRzVVkNix5dvmLbS1XM32av84rD4PvYFwBDOg7lnBqgSPSvXVH73N8bzI9qiqRIuUL6jodxGA"
               />
             </article>
