@@ -1,0 +1,6 @@
+{
+  "name": "The New York Times",
+  "description": "Digital edition of The New York Times with front page broadsheet layout, full long-form article reader, interactive daily mini crossword, opinion essays, Wirecutter reviews, and section hubs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

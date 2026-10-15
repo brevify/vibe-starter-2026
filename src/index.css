@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --font-masthead: "UnifrakturMaguntia", "Pirata One", "Cinzel", Georgia, serif;
+  --font-headline: "Newsreader", "Playfair Display", Georgia, serif;
+  --font-summary: "Libre Baskerville", Georgia, serif;
+  --font-sans: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --color-nyt-black: #121212;
+  --color-nyt-gray: #727272;
+  --color-nyt-darkgray: #363636;
+  --color-nyt-lightgray: #ebebeb;
+  --color-nyt-border: #e2e2e2;
+  --color-nyt-subtle: #f7f7f7;
+  --color-nyt-blue: #567b95;
+  --color-nyt-hoverblue: #326891;
+  --color-nyt-accent: #326891;
+}
+
+/* Custom CSS for specialized newspaper hairline borders & typography */
+.newspaper-rule-double {
+  border-top: 1px solid #121212;
+  border-bottom: 1px solid #121212;
+  height: 4px;
+}
+
+.vertical-rule {
+  border-right: 1px solid #e2e2e2;
+}
+
+.headline-tight {
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+
+.masthead-title {
+  font-family: 'UnifrakturMaguntia', 'Pirata One', 'Cinzel', Georgia, serif;
+  font-feature-settings: "kern" 1;
+}
+
+/* Custom drop-cap for editorial longform */
+.nyt-drop-cap::first-letter {
+  font-family: "Newsreader", "Playfair Display", Georgia, serif;
+  float: left;
+  font-size: 4.8rem;
+  line-height: 0.8;
+  margin-top: 0.15rem;
+  margin-right: 0.65rem;
+  font-weight: 700;
+  color: #121212;
+}
+
+/* Smooth newspaper print aesthetic */
+body {
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
